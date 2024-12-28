@@ -260,11 +260,11 @@ const TambolaCards: React.FC = () => {
               <div className="mt-3 text-center">
                 <h3 className="text-sm font-semibold">Crossed Off</h3>
                 {crossedOffNumbers.length > 0 ? (
-                  <p className="text-sm mt-1">
+                  <p className="text-sm text-black mt-1">
                     {crossedOffNumbers.join(", ")}
                   </p>
                 ) : (
-                  <p className="text-xs text-gray-500 mt-1">
+                  <p className="text-xs text-black mt-1">
                     No numbers crossed off yet
                   </p>
                 )}
