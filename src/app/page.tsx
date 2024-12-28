@@ -27,8 +27,7 @@ type TambolaCard = Array<Array<number | null>>;
  * - each column is sorted in ascending order from top to bottom
  */
 function generateTambolaCard(): TambolaCard {
-  // Step 1: Determine which (row, col) cells will be filled
-  // We want exactly 15 cells filled (5 in each row), and each column must have at least 1 filled cell.
+  // Step 1: Determine which (row, col) cells will be filled (15 total: 5 each row, at least 1 each column).
 
   const card: TambolaCard = Array.from({ length: 9 }, () => Array(3).fill(null));
 
@@ -50,7 +49,7 @@ function generateTambolaCard(): TambolaCard {
 
   // Second pass: continue adding columns to rows until each row has 5 columns
   while (rowCap.some((count) => count < 5)) {
-    const rowCandidates = [0, 1, 2].filter((r) => r < 3 && rowCap[r] < 5);
+    const rowCandidates = [0, 1, 2].filter((r) => rowCap[r] < 5);
     if (rowCandidates.length === 0) break;
 
     const row = rowCandidates[Math.floor(Math.random() * rowCandidates.length)];
@@ -60,8 +59,8 @@ function generateTambolaCard(): TambolaCard {
         colCandidates.push(c);
       }
     }
-
     if (colCandidates.length === 0) break;
+
     const col = colCandidates[Math.floor(Math.random() * colCandidates.length)];
 
     chosenCells.add(`${row},${col}`);
@@ -185,70 +184,94 @@ const TambolaCards: React.FC = () => {
 
       {/* Display the cards */}
       <div className="flex flex-wrap justify-center gap-8">
-        {cards.map(({ card, markedNumbers }, cardIndex) => (
-          <div
-            key={cardIndex}
-            className="bg-white border border-gray-300 shadow-md rounded-md p-4 w-full sm:w-auto"
-          >
-            <h2 className="text-lg font-bold text-center mb-4">
-              Card #{cardIndex + 1}
-            </h2>
+        {cards.map(({ card, markedNumbers }, cardIndex) => {
+          // Sort the marked/crossed numbers in ascending order
+          const crossedOffNumbers = Array.from(markedNumbers).sort(
+            (a, b) => a - b
+          );
 
-            {/* Overflow container for horizontal scroll on smaller screens */}
-            <div className="overflow-x-auto w-full">
-              <table className="table-auto border-collapse mx-auto">
-                <tbody>
-                  {/* Each card has 3 rows */}
-                  {Array.from({ length: 3 }).map((_, rowIndex) => (
-                    <tr key={rowIndex} className="text-center">
-                      {/* 9 columns per row */}
-                      {card.map((colArray, colIndex) => {
-                        const cellValue = colArray[rowIndex];
-                        return (
-                          <td key={colIndex} className="px-1 py-1 sm:px-2 sm:py-2">
-                            {cellValue && (
-                              <button
-                                onClick={() =>
-                                  handleNumberClick(cardIndex, cellValue)
-                                }
-                                className={`relative 
-                                            flex items-center justify-center 
-                                            rounded-md border border-gray-300
-                                            transition-colors 
-                                            text-gray-700 font-bold
-                                            text-sm w-8 h-8
-                                            sm:text-lg sm:w-12 sm:h-12
-                                            ${
-                                              markedNumbers.has(cellValue)
-                                                ? "bg-orange-200"
-                                                : "bg-gray-100 hover:bg-blue-100"
-                                            }
-                                          `}
-                              >
-                                {/* The number itself */}
-                                <span>{cellValue}</span>
+          return (
+            <div
+              key={cardIndex}
+              className="bg-white border border-gray-300 shadow-md rounded-md p-4 w-full sm:w-auto"
+            >
+              <h2 className="text-lg font-bold text-center mb-4">
+                Card #{cardIndex + 1}
+              </h2>
 
-                                {/* If marked, overlay a smaller red 'X' */}
-                                {markedNumbers.has(cellValue) && (
-                                  <span
-                                    className="absolute text-red-600 text-lg sm:text-2xl pointer-events-none"
-                                    style={{ lineHeight: "1" }}
-                                  >
-                                    X
-                                  </span>
-                                )}
-                              </button>
-                            )}
-                          </td>
-                        );
-                      })}
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+              {/* Overflow container for horizontal scroll on smaller screens */}
+              <div className="overflow-x-auto w-full">
+                <table className="table-auto border-collapse mx-auto">
+                  <tbody>
+                    {/* Each card has 3 rows */}
+                    {Array.from({ length: 3 }).map((_, rowIndex) => (
+                      <tr key={rowIndex} className="text-center">
+                        {/* 9 columns per row */}
+                        {card.map((colArray, colIndex) => {
+                          const cellValue = colArray[rowIndex];
+                          return (
+                            <td
+                              key={colIndex}
+                              className="px-1 py-1 sm:px-2 sm:py-2"
+                            >
+                              {cellValue && (
+                                <button
+                                  onClick={() =>
+                                    handleNumberClick(cardIndex, cellValue)
+                                  }
+                                  className={`relative 
+                                              flex items-center justify-center 
+                                              rounded-md border border-gray-300
+                                              transition-colors 
+                                              text-gray-700 font-bold
+                                              text-sm w-8 h-8
+                                              sm:text-lg sm:w-12 sm:h-12
+                                              ${
+                                                markedNumbers.has(cellValue)
+                                                  ? "bg-orange-200"
+                                                  : "bg-gray-100 hover:bg-blue-100"
+                                              }
+                                            `}
+                                >
+                                  {/* The number itself */}
+                                  <span>{cellValue}</span>
+
+                                  {/* If marked, overlay a smaller red 'X' */}
+                                  {markedNumbers.has(cellValue) && (
+                                    <span
+                                      className="absolute text-red-600 text-lg sm:text-2xl pointer-events-none"
+                                      style={{ lineHeight: "1" }}
+                                    >
+                                      X
+                                    </span>
+                                  )}
+                                </button>
+                              )}
+                            </td>
+                          );
+                        })}
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+
+              {/* Display crossed-off numbers below the card */}
+              <div className="mt-3 text-center">
+                <h3 className="text-sm font-semibold">Crossed Off</h3>
+                {crossedOffNumbers.length > 0 ? (
+                  <p className="text-sm mt-1">
+                    {crossedOffNumbers.join(", ")}
+                  </p>
+                ) : (
+                  <p className="text-xs text-gray-500 mt-1">
+                    No numbers crossed off yet
+                  </p>
+                )}
+              </div>
             </div>
-          </div>
-        ))}
+          );
+        })}
       </div>
     </div>
   );
