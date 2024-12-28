@@ -28,21 +28,17 @@ type TambolaCard = Array<Array<number | null>>;
  */
 function generateTambolaCard(): TambolaCard {
   // Step 1: Determine which (row, col) cells will be filled
-  //         We want exactly 15 cells filled (5 in each row), and each column must have at least 1 filled cell.
+  // We want exactly 15 cells filled (5 in each row), and each column must have at least 1 filled cell.
 
-  // Initialize empty card
   const card: TambolaCard = Array.from({ length: 9 }, () => Array(3).fill(null));
 
-  // rowCap[r] will track how many columns row r has used
+  // rowCap[r] tracks how many columns row r has used
   const rowCap = [0, 0, 0];
-
-  // We'll store chosen (row, col) pairs in chosenCells
   const chosenCells = new Set<string>();
 
   // First pass: ensure each column has at least one row
   for (let col = 0; col < 9; col++) {
     const possibleRows = [0, 1, 2].filter((r) => rowCap[r] < 5);
-    // In the rare case all rows are full (shouldn't normally happen here), just pick any
     const row =
       possibleRows.length > 0
         ? possibleRows[Math.floor(Math.random() * possibleRows.length)]
@@ -54,46 +50,40 @@ function generateTambolaCard(): TambolaCard {
 
   // Second pass: continue adding columns to rows until each row has 5 columns
   while (rowCap.some((count) => count < 5)) {
-    // Find a row that is not yet at capacity (less than 5)
-    const rowCandidates = [0, 1, 2].filter((r) => rowCap[r] < 5);
-    if (rowCandidates.length === 0) break; // in case of a weird edge case
+    const rowCandidates = [0, 1, 2].filter((r) => r < 3 && rowCap[r] < 5);
+    if (rowCandidates.length === 0) break;
 
     const row = rowCandidates[Math.floor(Math.random() * rowCandidates.length)];
-
-    // Find a column that is not yet chosen in this row
     const colCandidates = [];
     for (let c = 0; c < 9; c++) {
       if (!chosenCells.has(`${row},${c}`)) {
         colCandidates.push(c);
       }
     }
-    if (colCandidates.length === 0) break;
 
+    if (colCandidates.length === 0) break;
     const col = colCandidates[Math.floor(Math.random() * colCandidates.length)];
+
     chosenCells.add(`${row},${col}`);
     rowCap[row]++;
   }
 
-  // Step 2: We now know exactly which cells are chosen for each column and row.
-  //         We'll assign random numbers in each column's range, without duplicates across the card,
-  //         and ensure ascending order for each column.
-
-  const usedNumbers = new Set<number>(); // track duplicates across entire card
+  // Step 2: Assign random numbers in each column's range without duplicates.
+  const usedNumbers = new Set<number>();
 
   for (let col = 0; col < 9; col++) {
-    // Find which rows in this column are chosen
-    const chosenRowsForCol = [];
+    const chosenRowsForCol: number[] = [];
     for (let row = 0; row < 3; row++) {
       if (chosenCells.has(`${row},${col}`)) {
         chosenRowsForCol.push(row);
       }
     }
 
-    // Determine the numeric range for this column
-    const start = col * 10 + 1; // e.g., col=0 => 1..9, col=1 => 10..19, ...
-    const end = start + 8; // note: 1..9 is 9 numbers, 10..19 is 10 numbers, so for col 0 we handle 1..9
+    // Column range (col=0 => 1..9, col=1 => 10..19, etc.)
+    const start = col * 10 + 1;
+    const end = start + 8; // inclusive
 
-    // We need exactly chosenRowsForCol.length distinct random numbers from [start..end]
+    // We need distinct random numbers for however many rows are chosen in this column
     const neededCount = chosenRowsForCol.length;
     const colNumbers: number[] = [];
 
@@ -105,13 +95,11 @@ function generateTambolaCard(): TambolaCard {
       }
     }
 
-    // Sort colNumbers ascending
+    // Sort both the chosen row indices and the numbers in ascending order
     colNumbers.sort((a, b) => a - b);
-
-    // Also sort the chosen rows, so we place smaller numbers in top rows
     chosenRowsForCol.sort((a, b) => a - b);
 
-    // Assign them in ascending row order
+    // Place each number in its corresponding row
     chosenRowsForCol.forEach((row, idx) => {
       card[col][row] = colNumbers[idx];
     });
@@ -205,53 +193,60 @@ const TambolaCards: React.FC = () => {
             <h2 className="text-lg font-bold text-center mb-4">
               Card #{cardIndex + 1}
             </h2>
-            <table className="table-auto border-collapse mx-auto">
-              <tbody>
-                {/* Each card has 3 rows */}
-                {Array.from({ length: 3 }).map((_, rowIndex) => (
-                  <tr key={rowIndex} className="text-center">
-                    {/* 9 columns per row */}
-                    {card.map((colArray, colIndex) => {
-                      const cellValue = colArray[rowIndex];
-                      return (
-                        <td key={colIndex} className="px-2 py-2">
-                          {cellValue && (
-                            <button
-                              onClick={() =>
-                                handleNumberClick(cardIndex, cellValue)
-                              }
-                              className={`relative w-12 h-12 flex items-center justify-center
-                                          border border-gray-300 rounded-md
-                                          text-lg font-bold text-gray-700
-                                          transition-colors 
-                                          ${
-                                            markedNumbers.has(cellValue)
-                                              ? "bg-orange-200"
-                                              : "bg-gray-100 hover:bg-blue-100"
-                                          }
-                                        `}
-                            >
-                              {/* The number itself */}
-                              <span>{cellValue}</span>
 
-                              {/* If marked, overlay a smaller red 'X' */}
-                              {markedNumbers.has(cellValue) && (
-                                <span
-                                  className="absolute text-red-600 text-2xl pointer-events-none"
-                                  style={{ lineHeight: "1" }}
-                                >
-                                  X
-                                </span>
-                              )}
-                            </button>
-                          )}
-                        </td>
-                      );
-                    })}
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+            {/* Overflow container for horizontal scroll on smaller screens */}
+            <div className="overflow-x-auto w-full">
+              <table className="table-auto border-collapse mx-auto">
+                <tbody>
+                  {/* Each card has 3 rows */}
+                  {Array.from({ length: 3 }).map((_, rowIndex) => (
+                    <tr key={rowIndex} className="text-center">
+                      {/* 9 columns per row */}
+                      {card.map((colArray, colIndex) => {
+                        const cellValue = colArray[rowIndex];
+                        return (
+                          <td key={colIndex} className="px-1 py-1 sm:px-2 sm:py-2">
+                            {cellValue && (
+                              <button
+                                onClick={() =>
+                                  handleNumberClick(cardIndex, cellValue)
+                                }
+                                className={`relative 
+                                            flex items-center justify-center 
+                                            rounded-md border border-gray-300
+                                            transition-colors 
+                                            text-gray-700 font-bold
+                                            text-sm w-8 h-8
+                                            sm:text-lg sm:w-12 sm:h-12
+                                            ${
+                                              markedNumbers.has(cellValue)
+                                                ? "bg-orange-200"
+                                                : "bg-gray-100 hover:bg-blue-100"
+                                            }
+                                          `}
+                              >
+                                {/* The number itself */}
+                                <span>{cellValue}</span>
+
+                                {/* If marked, overlay a smaller red 'X' */}
+                                {markedNumbers.has(cellValue) && (
+                                  <span
+                                    className="absolute text-red-600 text-lg sm:text-2xl pointer-events-none"
+                                    style={{ lineHeight: "1" }}
+                                  >
+                                    X
+                                  </span>
+                                )}
+                              </button>
+                            )}
+                          </td>
+                        );
+                      })}
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           </div>
         ))}
       </div>
